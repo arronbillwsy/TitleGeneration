@@ -3,6 +3,7 @@ import sys
 import json
 import io
 import corenlp
+import os
 
 
 def read_file(file_path, pre_process=lambda x: x, encoding="utf-8"):
@@ -17,14 +18,16 @@ def read_file(file_path, pre_process=lambda x: x, encoding="utf-8"):
         logging.error("Failed to open file {0}".format(err))
         sys.exit(1)
 
-
-
-
-
+def file_name(file_dir):
+    L=[]
+    for root, dirs, files in os.walk(file_dir):
+        for file in files:
+            if os.path.splitext(file)[1] == '.txt':
+                L.append(file)
+    return L
 
 def extract_content(input_string):
     return json.loads(input_string)
-
 
 def content_to_sentences(client, input_string):
     ann = client.annotate(input_string)
@@ -61,9 +64,9 @@ if __name__ == '__main__':
     # create word2id : String,Int
     # create id2word : Int, String
 
-    path = "/home/wsy/桌面/Bytecup2018/bytecup.corpus.train.{0}.txt"
-    i = 0
-    output_path = "/home/wsy/桌面/Bytecup2018/processed_train.{0}.txt"
+    path_dir = "/home/wsy/桌面/Bytecup2018/key_sen/"
+    path_base = "processed_key_sen_train.{0}.txt/"
+    path_list = file_name(path_dir)
     output_id2word_path = "./resource/id2word.txt"
     output_word2id_path = "./resource/word2id.txt"
 
@@ -80,23 +83,21 @@ if __name__ == '__main__':
 
     with corenlp.CoreNLPClient(annotators="tokenize ssplit".split()) as client:
         for index in range(9):
-            with io.open(output_path.format(index), encoding="utf8", mode="w+") as file:
-                for res_dict in read_file(path.format(index), extract_content):
-                    content = res_dict["content"]
-                    title = res_dict["title"]
-                    ann = client.annotate(content)
-                    content_words = content_to_sentences(client, content)
-                    title_words = content_to_sentences(client,title)[0]
-                    add_title_word(word2id,id2word,title_words)
-                    res_dict["content"] = content_words
-                    res_dict["title"] = title_words
-                    file.write(json.dumps(res_dict) + "\n")
+            with io.open(path_dir+path_base.format(index)+index+".txt", encoding="utf8", mode="w+") as file:
+                for res_dict in read_file(path_dir+path_base.format(index)+"/"+path_list[index], extract_content):
+                        content = res_dict["sentence_list"]
+                        title = res_dict["title"]
+                        ann = client.annotate(content)
+                        title_words = content_to_sentences(client,title)[0]
+                        add_title_word(word2id,id2word,title_words)
+                        res_dict["title"] = title_words
+                        file.write(json.dumps(res_dict) + "\n")
     title_vocab_size = len(word2id)
 
     for index in range(9):
-        with io.open(output_path.format(index), encoding="utf8", mode="w+") as file:
-            for res_dict in read_file(path.format(index), extract_content):
-                content = res_dict["content"]
+        with io.open(path_dir+path_base.format(index)+path_list[index], encoding="utf8", mode="w+") as file:
+            for res_dict in read_file(path_dir+path_base.format(index)+path_list[index], extract_content):
+                content = res_dict["sentence_list"]
                 add_content_word(word2id,id2word,content)
 
     with io.open(output_id2word_path,encoding="utf8", mode="a+") as file1:
