@@ -47,11 +47,12 @@ def add_title_word(word2id, id2word, title):
             id2word[id] = word
 
 def add_content_word(word2id, id2word, content):
-    for word in content:
-        if word not in word2id.keys():
-            id = len(word2id)
-            word2id[word] = id
-            id2word[id] = word
+    for sentence in content:
+        for word in sentence:
+            if word not in word2id.keys():
+                id = len(word2id)
+                word2id[word] = id
+                id2word[id] = word
 
 
 
@@ -64,11 +65,10 @@ if __name__ == '__main__':
     # create word2id : String,Int
     # create id2word : Int, String
 
-    path_dir = "/home/wsy/桌面/Bytecup2018/key_sen/"
-    path_base = "processed_key_sen_train.{0}.txt/"
-    path_list = file_name(path_dir)
-    output_id2word_path = "./resource/id2word.txt"
-    output_word2id_path = "./resource/word2id.txt"
+    path_dir = "/home/wsy/桌面/Bytecup2018/key_sen/processed_key_sen_train.{0}/"
+    output_path = "train.{0}.txt"
+    output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/title.txt"
+    output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/content.txt"
 
     word2id = {}
     id2word = {}
@@ -80,30 +80,43 @@ if __name__ == '__main__':
     word2id['SOS'] = 1
     word2id['EOS'] = 2
     word2id['OOV'] = 3
+    content_word2id = {}
+    content_id2word = {}
 
     with corenlp.CoreNLPClient(annotators="tokenize ssplit".split()) as client:
         for index in range(9):
-            with io.open(path_dir+path_base.format(index)+index+".txt", encoding="utf8", mode="w+") as file:
-                for res_dict in read_file(path_dir+path_base.format(index)+"/"+path_list[index], extract_content):
-                        content = res_dict["sentence_list"]
-                        title = res_dict["title"]
-                        ann = client.annotate(content)
-                        title_words = content_to_sentences(client,title)[0]
-                        add_title_word(word2id,id2word,title_words)
-                        res_dict["title"] = title_words
-                        file.write(json.dumps(res_dict) + "\n")
+            path_list = file_name(path_dir.format(index))
+            with io.open(path_dir.format(index)+output_path.format(index), encoding="utf8", mode="w+") as file:
+                for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
+                    content = res_dict["sentence_list"]
+                    title = res_dict["title"]
+                    content = res_dict["sentence_list"]
+                    add_content_word(content_word2id, content_id2word, content)
+                    title_words = content_to_sentences(client,title)[0]
+                    add_title_word(word2id,id2word,title_words)
+                    res_dict["title"] = title_words
+                    file.write(json.dumps(res_dict) + "\n")
     title_vocab_size = len(word2id)
 
-    for index in range(9):
-        with io.open(path_dir+path_base.format(index)+path_list[index], encoding="utf8", mode="w+") as file:
-            for res_dict in read_file(path_dir+path_base.format(index)+path_list[index], extract_content):
-                content = res_dict["sentence_list"]
-                add_content_word(word2id,id2word,content)
+    # for index in range(9):
+    #     for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
+    #         title = res_dict["title"]
+    #         add_title_word(word2id,id2word,title)
+    #
+    # for index in range(9):
+    #     for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
+    #         content = res_dict["sentence_list"]
+    #         add_content_word(word2id,id2word,content)
 
-    with io.open(output_id2word_path,encoding="utf8", mode="a+") as file1:
+    with io.open(output_title_path,encoding="utf8", mode="a+") as file1:
+        id_word = {}
         for id,word in id2word.items():
-            file1.write(id+","+word+"\n")
-
-    with io.open(output_word2id_path,encoding="utf8", mode="a+") as file2:
-        for word,id in word2id.items():
-            file2.write(word+","+id+"\n")
+            id_word["id"] = id
+            id_word["word"] = word
+            file1.write(json.dumps(id_word)+"\n")
+    with io.open(output_content_path, encoding="utf8", mode="a+") as file2:
+        id_word2 = {}
+        for id,word in content_id2word.items():
+            id_word2["id"] = id+title_vocab_size
+            id_word2["word"] = word
+            file1.write(json.dumps(id_word2)+"\n")
