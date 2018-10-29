@@ -21,15 +21,24 @@ def extract_content(input_string):
 def read_dict(title_path,content_path):
     word2id = {}
     id2word = {}
-    with io.open(title_path, encoding="utf8", mode="w+") as file:
-        for res_dict in read_file(title_path, extract_content):
-            word2id[res_dict["id"]] = res_dict["word"]
-            id2word[res_dict["word"]] = res_dict["id"]
-    with io.open(content_path, encoding="utf8", mode="w+") as file:
-        for res_dict in read_file(content_path, extract_content):
-            word2id[res_dict["id"]] = res_dict["word"]
-            id2word[res_dict["word"]] = res_dict["id"]
-    return word2id,id2word
+    title_vocab_size = 0
+    for res_dict in read_file(title_path, extract_content):
+        word2id[res_dict["id"]] = res_dict["word"]
+        id2word[res_dict["word"]] = res_dict["id"]
+        title_vocab_size = title_vocab_size + 
+    index = title_vocab_size
+    for res_dict in read_file(content_path, extract_content):
+        if res_dict["word"] not in word2id.keys():
+            word2id[index] = res_dict["word"]
+            id2word[res_dict["word"]] = index
+            index = index + 1
+    return word2id,id2word,title_vocab_size
+
+output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/title.txt"
+output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/content.txt"
+w2id,id2w,size = read_dict(output_title_path,output_content_path)
+
+
 
 def doc2id(word2id,content):
     doc_id = []
