@@ -119,4 +119,4 @@ if __name__ == '__main__':
         for id,word in content_id2word.items():
             id_word2["id"] = id+title_vocab_size
             id_word2["word"] = word
-            file1.write(json.dumps(id_word2)+"\n")
+            file2.write(json.dumps(id_word2)+"\n")
