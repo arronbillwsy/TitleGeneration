@@ -65,8 +65,8 @@ if __name__ == '__main__':
 
     path_dir = "/home/wsy/桌面/Bytecup2018/key_sen/processed_key_sen_train.{0}/"
     output_path = "train.{0}.txt"
-    output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/title.txt"
-    output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/resource/content.txt"
+    output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/title.txt"
+    output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/content.txt"
 
     word2id = {}
     id2word = {}
@@ -81,30 +81,29 @@ if __name__ == '__main__':
     content_word2id = {}
     content_id2word = {}
 
-    with corenlp.CoreNLPClient(annotators="tokenize ssplit".split()) as client:
-        for index in range(9):
-            path_list = file_name(path_dir.format(index))
-            with io.open(path_dir.format(index)+output_path.format(index), encoding="utf8", mode="w+") as file:
-                for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
-                    content = res_dict["sentence_list"]
-                    title = res_dict["title"]
-                    content = res_dict["sentence_list"]
-                    add_content_word(content_word2id, content_id2word, content)
-                    title_words = content_to_sentences(client,title)[0]
-                    add_title_word(word2id,id2word,title_words)
-                    res_dict["title"] = title_words
-                    file.write(json.dumps(res_dict) + "\n")
-    title_vocab_size = len(word2id)
+    # with corenlp.CoreNLPClient(annotators="tokenize ssplit".split()) as client:
+    #     for index in range(9):
+    #         path_list = file_name(path_dir.format(index))
+    #         with io.open(path_dir.format(index)+output_path.format(index), encoding="utf8", mode="w+") as file:
+    #             for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
+    #                 content = res_dict["sentence_list"]
+    #                 title = res_dict["title"]
+    #                 content = res_dict["sentence_list"]
+    #                 add_content_word(content_word2id, content_id2word, content)
+    #                 title_words = content_to_sentences(client,title)[0]
+    #                 add_title_word(word2id,id2word,title_words)
+    #                 res_dict["title"] = title_words
+    #                 file.write(json.dumps(res_dict) + "\n")
 
-    # for index in range(9):
-    #     for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
-    #         title = res_dict["title"]
-    #         add_title_word(word2id,id2word,title)
-    #
-    # for index in range(9):
-    #     for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
-    #         content = res_dict["sentence_list"]
-    #         add_content_word(word2id,id2word,content)
+
+    for index in range(9):
+        for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
+            title = res_dict["title"]
+            add_title_word(word2id,id2word,title)
+            content = res_dict["sentence_list"]
+            add_content_word(content_word2id, content_id2word, content)
+
+    title_vocab_size = len(word2id)
 
     with io.open(output_title_path,encoding="utf8", mode="a+") as file1:
         id_word = {}
