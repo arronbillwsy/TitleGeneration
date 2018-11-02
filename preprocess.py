@@ -2,7 +2,6 @@ import logging
 import sys
 import json
 import io
-import corenlp
 import os
 
 
@@ -18,102 +17,74 @@ def read_file(file_path, pre_process=lambda x: x, encoding="utf-8"):
         logging.error("Failed to open file {0}".format(err))
         sys.exit(1)
 
+
 def file_name(file_dir):
-    L=[]
+    file_list = []
     for root, dirs, files in os.walk(file_dir):
         for file in files:
             if os.path.splitext(file)[1] == '.txt':
-                L.append(file)
-    return L
+                file_list.append(file)
+    return file_list
+
 
 def extract_content(input_string):
     return json.loads(input_string)
 
-def content_to_sentences(client, input_string):
-    ann = client.annotate(input_string)
-    content = []
-    for sentence in ann.sentence:
-        sentence2words = []
-        for index,token in enumerate(sentence.token):
-            sentence2words.append(token.word)
-        content.append(sentence2words)
-    return content
 
-def add_title_word(word2id, id2word, title):
-    for word in title:
-        if word not in word2id.keys():
-            id = len(word2id)
-            word2id[word] = id
-            id2word[id] = word
+def add_title_word(title_word2id, title):
+    for word_title in title:
+        word_title = str.lower(word_title)
+        if word_title not in title_word2id.keys():
+            id_t = len(title_word2id)
+            title_word2id[word_title] = id_t
 
-def add_content_word(word2id, id2word, content):
+
+def add_content_word(content_word2id, title_word2id, content, size):
     for sentence in content:
-        for word in sentence:
-            if word not in word2id.keys():
-                id = len(word2id)
-                word2id[word] = id
-                id2word[id] = word
+        for word_content in sentence:
+            word_content = str.lower(word_content)
+            if word_content not in title_word2id.keys() and word_content not in content_vocab.keys():
+                id_c = len(content_word2id) + size
+                content_word2id[word_content] = id_c
+
 
 if __name__ == '__main__':
 
     # preprocess dataset as :
     # content : List<List<String>>
     # title : List<String>
-    # id: Int
-    # create word2id : String,Int
-    # create id2word : Int, String
+    # id: Long
+    # create word2id : String,Long
 
-    path_dir = "/home/wsy/桌面/Bytecup2018/key_sen/processed_key_sen_train.{0}/"
-    output_path = "train.{0}.txt"
-    output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/title.txt"
-    output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/content.txt"
-
-    word2id = {}
-    id2word = {}
-    id2word[0] = 'PAD'
-    id2word[1] = 'SOS'
-    id2word[2] = 'EOS'
-    id2word[3] = 'OOV'
-    word2id['PAD'] = 0
-    word2id['SOS'] = 1
-    word2id['EOS'] = 2
-    word2id['OOV'] = 3
-    content_word2id = {}
-    content_id2word = {}
-
-    # with corenlp.CoreNLPClient(annotators="tokenize ssplit".split()) as client:
-    #     for index in range(9):
-    #         path_list = file_name(path_dir.format(index))
-    #         with io.open(path_dir.format(index)+output_path.format(index), encoding="utf8", mode="w+") as file:
-    #             for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
-    #                 content = res_dict["sentence_list"]
-    #                 title = res_dict["title"]
-    #                 content = res_dict["sentence_list"]
-    #                 add_content_word(content_word2id, content_id2word, content)
-    #                 title_words = content_to_sentences(client,title)[0]
-    #                 add_title_word(word2id,id2word,title_words)
-    #                 res_dict["title"] = title_words
-    #                 file.write(json.dumps(res_dict) + "\n")
-
-
+    path_dir = "/home/wsy/桌面/Bytecup2018/data/key_sen/processed_key_sen_train.{0}/"
+    output_title_path = "/home/wsy/桌面/Bytecup2018/data/vovab/title.txt"
+    output_content_path = "/home/wsy/桌面/Bytecup2018/data/vovab/content.txt"
+    title_vocab = {}
+    title_vocab['PAD'] = 0
+    title_vocab['SOS'] = 1
+    title_vocab['EOS'] = 2
+    title_vocab['OOV'] = 3
+    content_vocab = {}
     for index in range(9):
-        for res_dict in read_file(path_dir.format(index)+output_path.format(index), extract_content):
+        path_list = file_name(path_dir.format(index))
+        for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
             title = res_dict["title"]
-            add_title_word(word2id,id2word,title)
+            add_title_word(title_vocab, title)
+    title_vocab_size = len(title_vocab)
+    for index in range(9):
+        path_list = file_name(path_dir.format(index))
+        for res_dict in read_file(path_dir.format(index)+path_list[0], extract_content):
             content = res_dict["sentence_list"]
-            add_content_word(content_word2id, content_id2word, content)
-
-    title_vocab_size = len(word2id)
-
+            add_content_word(content_vocab, title_vocab, content, title_vocab_size)
     with io.open(output_title_path,encoding="utf8", mode="a+") as file1:
         id_word = {}
-        for id,word in id2word.items():
-            id_word["id"] = id
+        for word, id_title in title_vocab.items():
+            id_word["id"] = id_title
             id_word["word"] = word
             file1.write(json.dumps(id_word)+"\n")
     with io.open(output_content_path, encoding="utf8", mode="a+") as file2:
         id_word2 = {}
-        for id,word in content_id2word.items():
-            id_word2["id"] = id+title_vocab_size
+        for word, id_content in content_vocab.items():
+            id_word2["id"] = id_content
             id_word2["word"] = word
             file2.write(json.dumps(id_word2)+"\n")

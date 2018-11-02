@@ -3,6 +3,7 @@ import logging
 import sys
 import json
 
+
 def read_file(file_path, pre_process=lambda x: x, encoding="utf-8"):
     """
     """
@@ -15,8 +16,10 @@ def read_file(file_path, pre_process=lambda x: x, encoding="utf-8"):
         logging.error("Failed to open file {0}".format(err))
         sys.exit(1)
 
+
 def extract_content(input_string):
     return json.loads(input_string)
+
 
 def read_dict(title_path,content_path):
     word2id = {}
@@ -25,14 +28,11 @@ def read_dict(title_path,content_path):
     for res_dict in read_file(title_path, extract_content):
         word2id[res_dict["word"]] = res_dict["id"]
         id2word[res_dict["id"]] = res_dict["word"]
-        title_vocab_size = title_vocab_size +1
-    index = title_vocab_size
+    title_vocab_size = len(word2id)
     for res_dict in read_file(content_path, extract_content):
-        if res_dict["word"] not in word2id.keys():
-            id2word[index] = res_dict["word"]
-            word2id[res_dict["word"]] = index
-            index = index + 1
-    return word2id,id2word,title_vocab_size
+        word2id[res_dict["word"]] = res_dict["id"]
+        id2word[res_dict["id"]] = res_dict["word"]
+    return word2id, id2word, title_vocab_size
 
 # output_title_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/title.txt"
 # output_content_path = "/home/wsy/PycharmProjects/TitleGeneration/TitleGeneration/resource/content.txt"
@@ -43,7 +43,7 @@ def read_dict(title_path,content_path):
 # print(1)
 
 
-def doc2id(word2id,content):
+def doc2id(word2id, content):
     doc_id = []
     doc_oov_dict = []
     initial = len(word2id)
@@ -59,9 +59,10 @@ def doc2id(word2id,content):
                 sen_oov_dict[word] = oov_index
         doc_id.append(sentence_id)
         doc_oov_dict.append(sen_oov_dict)
-    return doc_id,doc_oov_dict
+    return doc_id, doc_oov_dict
 
-def title2id(word2id,size,title):
+
+def title2id(word2id, size, title):
     title_id = []
     title_vocab = {key:value for key,value in word2id.items() if value<size}
     for word in title:
